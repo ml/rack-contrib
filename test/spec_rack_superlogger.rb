@@ -22,6 +22,13 @@ context "Rack::Superlogger" do
     test_response(logger, ':some_var :something_else')
   end
   
+  specify "should substitute :content_length with Content-length from response" do
+    logger = mock("logger")
+    logger.expects("info").with("foobar kiszonka 3").once
+    
+    test_response(logger, ":some_var :something_else :content_length")
+  end
+  
   specify "should substitute :duration with the runtime of the application" do
     logger = mock("logger")
     logger.expects(:info).with("foobar kiszonka 0 ms")
