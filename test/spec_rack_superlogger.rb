@@ -51,4 +51,15 @@ context "Rack::Superlogger" do
     
     test_response(logger, ":some_var :something_else :content_type :query_string")
   end
+  
+  specify 'logger should be accessible through env["rack.superlogger.raw_logger"]' do
+    logger = mock("logger", :info => nil)
+    
+    app = lambda { |env| 
+      env["rack.superlogger.raw_logger"].should.equal logger
+      [200, { "Content-type" => "test/plain", "Content-length" => "0" }, [""] ] 
+    }
+    
+    Rack::Superlogger.new(app, logger, "").call(Rack::MockRequest.env_for("/"))
+  end
 end

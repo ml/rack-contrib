@@ -19,9 +19,8 @@ module Rack
 
      
     def call(env)
-      env["rack.superlogger.data"] = {}
-      
-      
+      env["rack.superlogger.data"], env["rack.superlogger.raw_logger"] = {}, @logger
+            
       before = Time.now.to_f
       status, headers, body = @app.call(env)
       duration = ((Time.now.to_f - before.to_f) * 1000).floor 
