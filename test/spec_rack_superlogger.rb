@@ -7,8 +7,8 @@ require 'mocha'
 context "Rack::Superlogger" do
   def test_response(logger, template)
     app = lambda { |env| 
-      env["rack.superlogger"][:some_var] = "foobar"
-      env["rack.superlogger"][:something_else] = "kiszonka"
+      env["rack.superlogger.data"][:some_var] = "foobar"
+      env["rack.superlogger.data"][:something_else] = "kiszonka"
       [200, { "Content-type" => "test/plain", "Content-length" => "3" }, ["foo"]] 
     }
     

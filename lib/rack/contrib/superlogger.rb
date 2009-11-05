@@ -1,5 +1,13 @@
 module Rack
   class Superlogger
+    module LogProcessor
+      class Base # may be async or sth
+        def initalize(logger, env, response)
+          
+        end
+      end
+    end
+      
     REQUEST_METHODS = Rack::Request.public_instance_methods(false).
                         reject { |method_name| method_name =~ /[=\[]|content_length/ }.freeze
 
@@ -11,7 +19,8 @@ module Rack
 
      
     def call(env)
-      env["rack.superlogger"] = {}
+      env["rack.superlogger.data"] = {}
+      
       
       before = Time.now.to_f
       status, headers, body = @app.call(env)
@@ -20,15 +29,15 @@ module Rack
       message = @template.dup
       request = Rack::Request.new(env)
       
-      env["rack.superlogger"][:duration]       = duration.to_s             if message.include? ":duration"
-      env["rack.superlogger"][:status]         = status.to_s               if message.include? ":status"
-      env["rack.superlogger"][:content_length] = headers["Content-length"] if message.include? ":content_length"
+      env["rack.superlogger.data"][:duration]       = duration.to_s             if message.include? ":duration"
+      env["rack.superlogger.data"][:status]         = status.to_s               if message.include? ":status"
+      env["rack.superlogger.data"][:content_length] = headers["Content-length"] if message.include? ":content_length"
       
       REQUEST_METHODS.each do |method_name|
-        env["rack.superlogger"][method_name.to_sym] = request.send(method_name.to_sym) if message.include?(":#{method_name}")
+        env["rack.superlogger.data"][method_name.to_sym] = request.send(method_name.to_sym) if message.include?(":#{method_name}")
       end
       
-      env["rack.superlogger"].each do |k, v|
+      env["rack.superlogger.data"].each do |k, v|
         message.gsub! ":#{k}", v.to_s
       end
 
