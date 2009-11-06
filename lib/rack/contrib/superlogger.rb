@@ -2,8 +2,29 @@ module Rack
   class Superlogger
     module LogProcessor
       class Base # may be async or sth
-        def initalize(logger, env, response)
-          
+        def initialize(logger, template)
+          @logger, @template = logger, template
+        end
+        
+        def process(env)
+          raise "Not implemented"
+        end
+      end
+
+      class Simple < Base
+        def process(env)
+          request = Rack::Request.new(env)
+          message = @template.dup
+
+          Rack::Superlogger::REQUEST_METHODS.each do |method_name|
+            env["rack.superlogger.data"][method_name.to_sym] = request.send(method_name.to_sym) if message.include?(":#{method_name}")
+          end
+
+          env["rack.superlogger.data"].each do |k, v|
+            message.gsub! ":#{k}", v.to_s
+          end
+
+          @logger.info message
         end
       end
     end
@@ -14,7 +35,7 @@ module Rack
     def initialize(app, logger, template)
       @app = app
       @logger = logger
-      @template = template
+      @processor = LogProcessor::Simple.new(@logger, template)
     end
 
      
@@ -25,22 +46,12 @@ module Rack
       status, headers, body = @app.call(env)
       duration = ((Time.now.to_f - before.to_f) * 1000).floor 
       
-      message = @template.dup
-      request = Rack::Request.new(env)
+      env["rack.superlogger.data"][:duration]       = duration.to_s
+      env["rack.superlogger.data"][:status]         = status.to_s
+      env["rack.superlogger.data"][:content_length] = headers["Content-length"]
       
-      env["rack.superlogger.data"][:duration]       = duration.to_s             if message.include? ":duration"
-      env["rack.superlogger.data"][:status]         = status.to_s               if message.include? ":status"
-      env["rack.superlogger.data"][:content_length] = headers["Content-length"] if message.include? ":content_length"
+      @processor.process(env)
       
-      REQUEST_METHODS.each do |method_name|
-        env["rack.superlogger.data"][method_name.to_sym] = request.send(method_name.to_sym) if message.include?(":#{method_name}")
-      end
-      
-      env["rack.superlogger.data"].each do |k, v|
-        message.gsub! ":#{k}", v.to_s
-      end
-
-      @logger.info message
       [status, headers, body]
     end
   end
