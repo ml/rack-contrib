@@ -1,9 +1,22 @@
 module Rack
   class Superlogger
     module LogProcessor
+      def self.find(type)
+        case type
+        when Class
+          type
+        when String, Symbol
+          const_get type.to_s.capitalize
+        else
+          raise ArgumentError, "Unexpected type class #{type.class}"
+        end
+      end
+      
       class Base # may be async or sth
-        def initialize(logger, template)
-          @logger, @template = logger, template
+        attr_reader :logger
+        
+        def initialize(options)
+          @options = options
         end
         
         def process(env)
@@ -11,7 +24,13 @@ module Rack
         end
       end
 
-      class Simple < Base
+      class Templated < Base
+        def initialize(options)
+          @logger   = options.delete(:logger)   or raise ArgumentError, "You must specify a logger"
+          @template = options.delete(:template) or raise ArgumentError, "You must specify a template"
+          super options
+        end
+        
         def process(env)
           request = Rack::Request.new(env)
           message = @template.dup
@@ -32,15 +51,13 @@ module Rack
     REQUEST_METHODS = Rack::Request.public_instance_methods(false).
                         reject { |method_name| method_name =~ /[=\[]|content_length/ }.freeze
 
-    def initialize(app, logger, template)
-      @app = app
-      @logger = logger
-      @processor = LogProcessor::Simple.new(@logger, template)
+    def initialize(app, options)
+      @app, @processor = app, LogProcessor::find(options.delete(:type)).new(options)
     end
 
      
     def call(env)
-      env["rack.superlogger.data"], env["rack.superlogger.raw_logger"] = {}, @logger
+      env["rack.superlogger.data"], env["rack.superlogger.raw_logger"] = {}, @processor.logger
             
       before = Time.now.to_f
       status, headers, body = @app.call(env)
@@ -50,7 +67,7 @@ module Rack
       env["rack.superlogger.data"][:status]         = status.to_s
       env["rack.superlogger.data"][:content_length] = headers["Content-length"]
       
-      @processor.process(env)
+      @processor.process env
       
       [status, headers, body]
     end

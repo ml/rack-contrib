@@ -12,7 +12,7 @@ context "Rack::Superlogger" do
       [200, { "Content-type" => "test/plain", "Content-length" => "3" }, ["foo"]] 
     }
     
-    Rack::Superlogger.new(app, logger, template).call(Rack::MockRequest.env_for("?super=logger"))
+    Rack::Superlogger.new(app, {:type => "Templated", :logger => logger, :template => template}).call(Rack::MockRequest.env_for("?super=logger"))
   end
   
   specify "should substitute :keys in template with values from 'rack.logger'" do
@@ -60,6 +60,6 @@ context "Rack::Superlogger" do
       [200, { "Content-type" => "test/plain", "Content-length" => "0" }, [""] ] 
     }
     
-    Rack::Superlogger.new(app, logger, "").call(Rack::MockRequest.env_for("/"))
+    Rack::Superlogger.new(app, { :logger => logger, :template => "", :type => :templated }).call(Rack::MockRequest.env_for("/"))
   end
 end
