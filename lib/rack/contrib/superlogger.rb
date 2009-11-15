@@ -12,7 +12,7 @@ module Rack
         end
       end
       
-      class Base # may be async or sth
+      class Base
         attr_reader :logger
         
         def initialize(options)
