@@ -1,7 +1,7 @@
 module Rack
   class Superlogger
     module LogProcessor
-      def self.find(type)
+      def self.[](type)
         case type
         when Class
           type
@@ -52,7 +52,7 @@ module Rack
                         reject { |method_name| method_name =~ /[=\[]|content_length/ }.freeze
 
     def initialize(app, options)
-      @app, @processor = app, LogProcessor::find(options.delete(:type)).new(options)
+      @app, @processor = app, LogProcessor[options.delete(:type)].new(options)
     end
 
      
