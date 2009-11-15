@@ -54,7 +54,6 @@ module Rack
     def initialize(app, options)
       @app, @processor = app, LogProcessor[options.delete(:type)].new(options)
     end
-
      
     def call(env)
       env["rack.superlogger.data"], env["rack.superlogger.raw_logger"] = {}, @processor.logger
