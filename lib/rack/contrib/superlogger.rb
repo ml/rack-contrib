@@ -40,7 +40,7 @@ module Rack
           end
 
           env["rack.superlogger.data"].each do |k, v|
-            message.gsub! ":#{k}", v.to_s
+            message[":#{k}"] = v.to_s if message.include?(":#{k}")
           end
 
           @logger.info message
